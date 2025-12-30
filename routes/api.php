@@ -14,7 +14,7 @@ Route::get('users/login',[UsersController::class,"login"]);
 Route::post('devices/create',[DevicesController::class,"createDevice"]);
 
 Route::middleware("auth:sanctum")->group(function(){
-    Route::patch('users/update',[UsersController::class,"updateUserData"]);
+    Route::post('users/update',[UsersController::class,"updateUserData"]);
 
     Route::get('devices/fetch',[DevicesController::class,"fetchDevices"]);
     Route::get('devices/{id}/fetch/logs',[DevicesController::class,"fetchDeviceLogs"]);

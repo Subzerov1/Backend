@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('password');
             $table->string('device_token')->nullable();
             $table->string('lang')->nullable();
+            $table->string('image_path')->nullable();
             $table->boolean("verified")->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();

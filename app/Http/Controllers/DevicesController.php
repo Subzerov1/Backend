@@ -6,6 +6,7 @@ use App\Models\Device;
 use App\Models\log;
 use App\Models\User;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB ;
 use PgSql\Lob;
@@ -99,12 +100,17 @@ class DevicesController extends Controller
 
 
     public function fetchDevices(Request $request) {
-        $user = $request->user();
-        $query = DB::table("devices as dev");
-        $query->leftJoin('users_devices as per','per.device' , '=' , 'dev.id');
-        $query->where('per.user','=',$user->id);
-        $result = $query->select("dev.*")->get();        
-        return response()->json(['status' => "success", 'data' => $result]);
+        try{
+            $user = $request->user();
+            $query = DB::table("devices as dev");
+            $query->leftJoin('users_devices as per','per.device' , '=' , 'dev.id');
+            $query->where('per.user','=',$user->id);
+            $result = $query->select("dev.*")->get();        
+            return response()->json(['status' => "success", 'data' => $result]);
+        }catch(Exception $ex){
+            dd($ex);
+        }
+
     }
 
     public function fetchDeviceLogs(int $id , Request $request) {
