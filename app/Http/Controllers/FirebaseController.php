@@ -11,6 +11,7 @@ class FirebaseController extends Controller
 {
     static public function sendNotification($payload){
         $factory = (new Factory)->withServiceAccount(config('services.firebase.credentials'));
+        // $factory = (new Factory)->withServiceAccount(json_decode(env('FIREBASE_CREDENTIALS'), true));
         $messaging = $factory->createMessaging();
         // $notification = Notification::create('Hello', 'This is a test notification');
         $data = [];

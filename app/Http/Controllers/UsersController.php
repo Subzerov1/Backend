@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth ;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
@@ -53,6 +54,8 @@ class UsersController extends Controller
         return response()->json(['status'=>"success" , "data"=>$user]);
     }
 
+
+
     public function updateUserData(Request $request){
         $data = $request->validate([
             "lang" => "sometimes|string",
@@ -74,19 +77,18 @@ class UsersController extends Controller
         }
        
         if($request->hasFile('image')) {
-            if($user->image_path){
-                $exploded_path = explode('storage/',$user->image_path);
-                if(Storage::disk('public')->exists(end($exploded_path))){
-                   Storage::disk('public')->delete(end($exploded_path));
-                }
+            $api = cloudinary()->uploadApi();
+            $file = $request->file('image');
+            if($user->image_public_id){
+                $api->destroy($user->image_public_id);
             }
-            $store_path = "images/" . $user->id;
-            $file_path = $request->file('image')->store($store_path , 'public');
-            $full_path = env('APP_URL') . '/storage' . '/' . $file_path;
-            $data['image_path'] = $full_path;
+            $image = $api->upload($file->getRealPath(),[
+                "folder" => "images/" . $user->id,
+            ]);
             unset($data['image']);
+            $data['image_path'] = $image['secure_url'];
+            $data['image_public_id'] = $image['public_id'];
         }
-
         $user->update($data);
         return Response()->json(['status'=>"success","data"=>$user]);
     }

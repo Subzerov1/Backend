@@ -26,10 +26,5 @@ fly.toml
 **/.DS_Store
 **/Thumbs.db
 public/hot
-storage/uploads
-public/uploads
-*.env
-node_modules
-vendor
-/storage
+
 

@@ -18,5 +18,6 @@ Route::middleware("auth:sanctum")->group(function(){
 
     Route::get('devices/fetch',[DevicesController::class,"fetchDevices"]);
     Route::get('devices/{id}/fetch/logs',[DevicesController::class,"fetchDeviceLogs"]);
+    Route::delete('devices/{id}/users/remove',[DevicesController::class,"removeUserFromDevice"]);
     Route::post('devices/{serial_number}/add_to_user',[DevicesController::class,"addUserToDevice"]);
 });

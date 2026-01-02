@@ -19,7 +19,9 @@ return new class extends Migration
             $table->integer("serial_number")->unique();
             $table->string('software_release');
             $table->dateTime("first_launch");
+            $table->dateTime("last_update")->nullable();
             $table->string("history_length");
+            $table->string("status")->nullable();
         });
     }
 

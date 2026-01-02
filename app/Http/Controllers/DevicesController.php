@@ -31,7 +31,7 @@ class DevicesController extends Controller
             $device = Device::create($request->base_data);
 
         $last_log = Log::orderBy('datetime', 'desc')->first();
-      
+        
         #region [ ===> Data Processing <=== ]
         $sorted_logs = collect($request->details)->map(function($log) use($device) {
             $log['device'] = $device->id;
@@ -45,19 +45,22 @@ class DevicesController extends Controller
             if(!$last_datetime) return true;
             $current_datetime = Carbon::createFromFormat('Y-m-d H:i:s', $log['datetime']);
             if($current_datetime > $last_datetime) return true;
+            return false;
         });
         
         $low_helium_level_logs = $new_logs->where('percentage', '<=' , 50);
-       
+        $deviceStatus = null ;
+        $lastUpdate = $new_logs->last()['datetime'];
         if($low_helium_level_logs->isNotEmpty()) {
             $device_users = DB::table('users_devices')->where('device','=',$device->id)->select('user')->get();
+            $message = "Low_level.range50";
+            $range30 = $new_logs->where('percentage', '<' , 50);
+            if($range30) $message = "Low_level.range30";
+            $quench = $new_logs->where('percentage', '<' , 30);
+            if($quench) $message = "Low_level.quench";
+            $deviceStatus = $message;
             if($device_users->isNotEmpty()) {
                 foreach($device_users as $user){
-                    $message = "Low_level.range50";
-                    $range30 = $new_logs->where('percentage', '<' , 50);
-                    if($range30) $message = "Low_level.range50";
-                    $quench = $new_logs->where('percentage', '<' , 30);
-                    if($quench) $message = "Low_level.quench";
                     $user = User::find($user->user);
                     app()->setLocale($user->lang);
                     $payload['token'] = $user->device_token;
@@ -71,9 +74,13 @@ class DevicesController extends Controller
         }
         #endregion
 
-        
-        if(count($new_logs) > 0)
+        if($new_logs->isNotEmpty()){
+            DB::table('devices')->where('id','=',$device->id)->update([
+                "status" => $deviceStatus,
+                "last_update" => $lastUpdate,
+            ]);
             DB::table('devices_logs')->insert($new_logs->values()->toArray());
+        }
 
         return response()->json(['status'=>"success",'code'=>"data_saved"]);
     }
@@ -82,7 +89,6 @@ class DevicesController extends Controller
     public function addUserToDevice(int $serial_number , Request $request){
         $device = Device::where('serial_number',$serial_number)->first();
         $user = $request->user();
-
         if(!$device)
             return response()->json(['status'=>"failed", "code"=> "not_found"],400);
 
@@ -92,29 +98,37 @@ class DevicesController extends Controller
         $result = $query->select()->get();
         
         if($result->isNotEmpty())
-            return response()->json(['status'=>'failed','code'=>'already_registered']);
+            return response()->json(['status'=>'failed','code'=>'already_registered'],400);
 
         DB::table('users_devices')->insert(["device" => $device->id,"user" => $user->id]);
-        return response()->json(['status'=>"success","code"=>"data_saved"]); 
+
+        return response()->json(['status'=>"success","code"=>"data_saved",'data' => $device]); 
+    }
+
+
+    public function removeUserFromDevice(int $id , Request $request) {
+        $user = $request->user();
+        $device = Device::find($id);
+        if(!$device)
+            return response()->json(['status' => "failed", 'code'=> "not_found"],400);
+        $query = DB::table('users_devices');
+        $query->where("user" , '=' , $user->id);
+        $query->where("device" , '=' , $device->id);
+        $query->delete();
+        return response()->json(['status'=>'success','code'=> "data_saved"]);
     }
 
 
     public function fetchDevices(Request $request) {
-        try{
-            $user = $request->user();
-            $query = DB::table("devices as dev");
-            $query->leftJoin('users_devices as per','per.device' , '=' , 'dev.id');
-            $query->where('per.user','=',$user->id);
-            $result = $query->select("dev.*")->get();        
-            return response()->json(['status' => "success", 'data' => $result]);
-        }catch(Exception $ex){
-            dd($ex);
-        }
-
+        $user = $request->user();
+        $query = DB::table("devices as dev");
+        $query->leftJoin('users_devices as per','per.device' , '=' , 'dev.id');
+        $query->where('per.user', '=' , $user->id);
+        $result = $query->select("dev.*")->get();
+        return response()->json(['status'=>"success",'data'=>$result]);
     }
 
     public function fetchDeviceLogs(int $id , Request $request) {
-      
 
         $request->validate([
             "start_date" => "required|date",
