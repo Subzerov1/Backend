@@ -60,7 +60,7 @@ class DevicesController extends Controller
             if($quench) $message = "Low_level.quench";
             $deviceStatus = $message;
             if($device_users->isNotEmpty()) {
-                foreach($device_users as $user){
+                foreach($device_users as $user) {
                     $user = User::find($user->user);
                     app()->setLocale($user->lang);
                     $payload['token'] = $user->device_token;
